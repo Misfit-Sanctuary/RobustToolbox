@@ -417,13 +417,19 @@ namespace Robust.Client.WebView.Cef
 
                     var bufImg = _data.Renderer.Buffer.Buffer;
 
-                    _data.Texture.SetSubImage(
-                        Vector2i.Zero,
-                        bufImg,
-                        new UIBox2i(
-                            0, 0,
-                            Math.Min(Owner.PixelWidth, bufImg.Width),
-                            Math.Min(Owner.PixelHeight, bufImg.Height)));
+                    // #Misfits Fix - Clamp sub-image region to texture dimensions to prevent
+                    // ArgumentOutOfRangeException when Owner.PixelSize exceeds allocated texture
+                    // (can happen if Draw fires before Resized after a layout change)
+                    var copyW = Math.Min(Math.Min(Owner.PixelWidth, bufImg.Width), _data.Texture.Width);
+                    var copyH = Math.Min(Math.Min(Owner.PixelHeight, bufImg.Height), _data.Texture.Height);
+
+                    if (copyW > 0 && copyH > 0)
+                    {
+                        _data.Texture.SetSubImage(
+                            Vector2i.Zero,
+                            bufImg,
+                            new UIBox2i(0, 0, copyW, copyH));
+                    }
                 }
 
                 handle.UseShader(_shaderInstance);
